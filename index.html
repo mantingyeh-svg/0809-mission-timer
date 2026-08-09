@@ -111,6 +111,15 @@
   .timer.warn{ color:#ffb37a; }
   .timer.critical{ color:var(--accent); }
 
+  .sun-times{
+    margin-top:16px;
+    font-family:'SF Mono',Menlo,Consolas,monospace;
+    font-size:13px;
+    letter-spacing:0.06em;
+    color:var(--text-lo);
+    min-height:1em;
+  }
+
   .progress-wrap{
     position:relative;
     width:min(70vw,560px);
@@ -253,6 +262,7 @@
 <div class="hud">
   <div class="label" id="statusLabel">待命中</div>
   <div class="timer" id="timer">25:00</div>
+  <div class="sun-times" id="sunTimes"></div>
   <div class="progress-wrap">
     <div class="progress-track">
       <div class="progress-fill" id="progressFill"></div>
@@ -410,6 +420,40 @@
 
   render();
   updateButtons();
+
+  /* ---------------- Sunrise / sunset (Taipei) ---------------- */
+  var sunTimesEl = document.getElementById('sunTimes');
+  var SUN_API_URL = 'https://api.open-meteo.com/v1/forecast?latitude=25.03&longitude=121.56&daily=sunrise,sunset&timezone=Asia/Taipei&forecast_days=1';
+
+  function formatHM(iso){
+    var t = iso && iso.split('T')[1];
+    return t ? t.slice(0, 5) : null;
+  }
+
+  function loadSunTimes(){
+    var controller = new AbortController();
+    var timeoutId = setTimeout(function(){ controller.abort(); }, 8000);
+
+    fetch(SUN_API_URL, { signal: controller.signal })
+      .then(function(res){
+        if(!res.ok) throw new Error('bad response');
+        return res.json();
+      })
+      .then(function(data){
+        var sunrise = formatHM(data.daily && data.daily.sunrise && data.daily.sunrise[0]);
+        var sunset = formatHM(data.daily && data.daily.sunset && data.daily.sunset[0]);
+        if(!sunrise || !sunset) throw new Error('bad payload');
+        sunTimesEl.textContent = '日出 ' + sunrise + ' ／ 日落 ' + sunset;
+      })
+      .catch(function(){
+        sunTimesEl.textContent = '離線';
+      })
+      .finally(function(){
+        clearTimeout(timeoutId);
+      });
+  }
+
+  loadSunTimes();
 
   /* ---------------- Planet Scene ---------------- */
   var canvas = document.getElementById('scene');
