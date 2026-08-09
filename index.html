@@ -6,19 +6,19 @@
 <title>任務計時器</title>
 <style>
   :root{
-    --bg-0:#03050a;
-    --bg-1:#070b14;
+    --bg-0:#16265c;
+    --bg-1:#050a24;
     --accent:#ff6a3d;
     --accent-dim:#7a3420;
-    --btn-primary:#EAEFEF;
-    --btn-primary-hover:#ffffff;
-    --btn-primary-text:#0a0e18;
-    --icon-glow:rgba(200,220,255,0.85);
+    --btn-primary:#F4E9C9;
+    --btn-primary-hover:#FFF7E2;
+    --btn-primary-text:#16204a;
+    --icon-glow:rgba(255,230,175,0.9);
     --text-hi:#eef2f8;
-    --text-lo:#7d8aa0;
-    --gray-btn:#1a2030;
-    --gray-btn-border:#2c3547;
-    --gray-btn-text:#9aa5b8;
+    --text-lo:#8b96c0;
+    --gray-btn:#1a2350;
+    --gray-btn-border:#33417f;
+    --gray-btn-text:#a6b0d8;
   }
   *{box-sizing:border-box;}
   html,body{
@@ -68,8 +68,8 @@
     border-color:#3a4560;
   }
   .planet-btn.active{
-    background:var(--text-hi);
-    color:#0a0e18;
+    background:var(--btn-primary);
+    color:var(--btn-primary-text);
     border-color:transparent;
     font-weight:600;
   }
@@ -104,7 +104,7 @@
     line-height:1;
     letter-spacing:0.03em;
     color:var(--text-hi);
-    text-shadow:0 0 40px rgba(255,255,255,0.08), 0 0 90px rgba(255,106,61,0.08);
+    text-shadow:0 0 40px rgba(255,255,255,0.10), 0 0 90px rgba(255,220,150,0.14);
     font-variant-numeric:tabular-nums;
     user-select:none;
   }
@@ -234,7 +234,7 @@
     border-color:var(--btn-primary);
     color:var(--btn-primary-text);
     font-weight:700;
-    box-shadow:0 0 0 6px rgba(234,239,239,0.14), 0 0 28px 4px rgba(234,239,239,0.5);
+    box-shadow:0 0 0 6px rgba(244,233,201,0.16), 0 0 28px 4px rgba(244,233,201,0.55);
   }
   button.primary:hover{
     background:var(--btn-primary-hover);
@@ -252,9 +252,9 @@
 <canvas id="scene"></canvas>
 
 <div class="planet-switcher" id="planetSwitcher">
-  <button class="planet-btn active" data-planet="earth">地球</button>
+  <button class="planet-btn" data-planet="earth">地球</button>
   <button class="planet-btn" data-planet="mars">火星</button>
-  <button class="planet-btn" data-planet="moon">月球</button>
+  <button class="planet-btn active" data-planet="moon">月球</button>
   <button class="planet-btn" data-planet="jupiter">木星</button>
   <button class="planet-btn" data-planet="saturn">土星</button>
 </div>
@@ -270,12 +270,12 @@
         <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <linearGradient id="rocketBodyGrad" x1="12" y1="1" x2="12" y2="19" gradientUnits="userSpaceOnUse">
-              <stop offset="0" style="stop-color:#ffffff"/>
-              <stop offset="1" style="stop-color:#a9c4ff"/>
+              <stop offset="0" style="stop-color:#fffaf0"/>
+              <stop offset="1" style="stop-color:#f0d98c"/>
             </linearGradient>
             <linearGradient id="rocketFinGrad" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" style="stop-color:#c9d9ff"/>
-              <stop offset="1" style="stop-color:#7d9be8"/>
+              <stop offset="0" style="stop-color:#f5e3a8"/>
+              <stop offset="1" style="stop-color:#d9b45c"/>
             </linearGradient>
           </defs>
           <path d="M12 1c2.7 2.7 4.1 6.1 4.1 10.1 0 2.4-.5 4.6-1.4 6.6H9.3c-.9-2-1.4-4.2-1.4-6.6C7.9 7.1 9.3 3.7 12 1z" fill="url(#rocketBodyGrad)"/>
@@ -300,12 +300,12 @@
         <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <linearGradient id="astroHeadGrad" x1="8" y1="3" x2="16" y2="11" gradientUnits="userSpaceOnUse">
-              <stop offset="0" style="stop-color:#ffffff"/>
-              <stop offset="1" style="stop-color:#a9c4ff"/>
+              <stop offset="0" style="stop-color:#fffaf0"/>
+              <stop offset="1" style="stop-color:#f0d98c"/>
             </linearGradient>
             <linearGradient id="astroBodyGrad" x1="6" y1="10" x2="18" y2="22" gradientUnits="userSpaceOnUse">
-              <stop offset="0" style="stop-color:#dfe8ff"/>
-              <stop offset="1" style="stop-color:#8fa8e0"/>
+              <stop offset="0" style="stop-color:#f8ecc8"/>
+              <stop offset="1" style="stop-color:#d9b45c"/>
             </linearGradient>
           </defs>
           <circle cx="12" cy="7" r="4.3" fill="url(#astroHeadGrad)"/>
@@ -619,13 +619,13 @@
       rings: false
     },
     moon: {
-      bg: ['#08080a', '#101014'],
-      glow: ['rgba(200,200,215,0.05)', 'rgba(200,200,215,0.03)'],
-      rim: 'rgba(220,220,230,0.06)',
-      base: '#0b0b0d',
-      dayColor: { r:214, g:214, b:220 },
-      nightColor: { r:30, g:30, b:34 },
-      nightFloor: 0.04,
+      bg: ['#16265c', '#050a24'],
+      glow: ['rgba(255,225,150,0.22)', 'rgba(255,235,180,0.12)'],
+      rim: 'rgba(255,240,205,0.16)',
+      base: '#241c10',
+      dayColor: { r:248, g:236, b:194 },
+      nightColor: { r:34, g:28, b:18 },
+      nightFloor: 0.05,
       bands: null,
       rings: false
     },
@@ -659,7 +659,7 @@
     }
   };
 
-  var currentPlanet = 'earth';
+  var currentPlanet = 'moon';
 
   function bandColorFor(theme, y3, jitter){
     if(!theme.bands) return theme.dayColor;
@@ -816,10 +816,40 @@
     ctx.fillRect(0, 0, W, H);
   }
 
+  /* ---- subtle painterly grain overlay, built once from a fixed seed ---- */
+  var grainPattern = null;
+
+  function buildGrain(){
+    if(grainPattern) return;
+    var size = 128;
+    var off = document.createElement('canvas');
+    off.width = size; off.height = size;
+    var octx = off.getContext('2d');
+    var imgData = octx.createImageData(size, size);
+    var rand = mulberry32(777);
+    for(var i = 0; i < imgData.data.length; i += 4){
+      var v = Math.floor(rand() * 255);
+      imgData.data[i] = v; imgData.data[i+1] = v; imgData.data[i+2] = v; imgData.data[i+3] = 255;
+    }
+    octx.putImageData(imgData, 0, 0);
+    grainPattern = ctx.createPattern(off, 'repeat');
+  }
+
+  function drawGrain(){
+    if(!grainPattern) return;
+    ctx.save();
+    ctx.globalAlpha = 0.08;
+    ctx.globalCompositeOperation = 'soft-light';
+    ctx.fillStyle = grainPattern;
+    ctx.fillRect(0, 0, W, H);
+    ctx.restore();
+  }
+
   function frame(time){
     var theme = PLANET_THEMES[currentPlanet];
     ctx.clearRect(0, 0, W, H);
     drawBackground(theme);
+    drawGrain();
     drawStars(time);
     drawRings(theme);
     drawPlanet(time, theme);
@@ -827,6 +857,7 @@
   }
 
   window.addEventListener('resize', resize);
+  buildGrain();
   resize();
   requestAnimationFrame(frame);
 
