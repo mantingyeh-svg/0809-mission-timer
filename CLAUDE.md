@@ -13,6 +13,7 @@
 
 - `index.html` — 唯一的原始檔。HTML、CSS（`<style>`）、JS（`<script>`）都寫在同一個檔案裡，**不要**拆成獨立的 `.css`/`.js`，也不要引入任何外部套件、CDN 或框架。
 - 沒有 `package.json`、沒有建置工具、沒有 node_modules。修改後直接存檔即可用瀏覽器打開驗證。
+- `.claude/agents/interface-designer.md` — 專屬的 sub agent，負責介面設計與產品互動效果（視覺樣式、版面、動畫、微互動）。凡是視覺/互動導向的請求（加動畫、改樣式、讓畫面更有感覺）都應該優先交給這個 agent 處理；純邏輯 bug、部署、git、hook 設定不屬於它的範疇。
 
 ## 既有設計慣例（修改時請延續，不要另立新風格）
 
