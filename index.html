@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>任務計時器</title>
+<style>
+  :root{
+    --bg-0:#03050a;
+    --bg-1:#070b14;
+    --accent:#ff6a3d;
+    --accent-dim:#7a3420;
+    --btn-primary:#EAEFEF;
+    --btn-primary-hover:#ffffff;
+    --btn-primary-text:#0a0e18;
+    --icon-glow:rgba(200,220,255,0.85);
+    --text-hi:#eef2f8;
+    --text-lo:#7d8aa0;
+    --gray-btn:#1a2030;
+    --gray-btn-border:#2c3547;
+    --gray-btn-text:#9aa5b8;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;
+    padding:0;
+    width:100%;
+    height:100%;
+    background:var(--bg-0);
+    overflow:hidden;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  }
+  #scene{
+    position:fixed;
+    inset:0;
+    width:100%;
+    height:100%;
+    display:block;
+    background:var(--bg-0);
+  }
+
+  /* ---- planet switcher ---- */
+  .planet-switcher{
+    position:fixed;
+    top:4vh;
+    right:5vw;
+    display:flex;
+    gap:8px;
+    z-index:6;
+    flex-wrap:wrap;
+    justify-content:flex-end;
+    max-width:60vw;
+  }
+  .planet-btn{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    font-size:13px;
+    letter-spacing:0.04em;
+    padding:9px 18px;
+    border-radius:999px;
+    cursor:pointer;
+    border:1px solid var(--gray-btn-border);
+    background:rgba(26,32,48,0.7);
+    color:var(--gray-btn-text);
+    transition:all 0.15s ease;
+  }
+  .planet-btn:hover{
+    color:var(--text-hi);
+    border-color:#3a4560;
+  }
+  .planet-btn.active{
+    background:var(--text-hi);
+    color:#0a0e18;
+    border-color:transparent;
+    font-weight:600;
+  }
+  .planet-btn:focus-visible,
+  button:focus-visible{
+    outline:2px solid #3fa9ff;
+    outline-offset:2px;
+  }
+
+  .hud{
+    position:fixed;
+    inset:0;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:flex-start;
+    padding-top:14vh;
+    pointer-events:none;
+  }
+  .label{
+    letter-spacing:0.4em;
+    font-size:12px;
+    color:var(--text-lo);
+    text-transform:uppercase;
+    margin-bottom:14px;
+    font-family:'SF Mono',Menlo,Consolas,monospace;
+  }
+  .timer{
+    font-family:'SF Mono',Menlo,Consolas,'Courier New',monospace;
+    font-weight:600;
+    font-size:min(19vw,150px);
+    line-height:1;
+    letter-spacing:0.03em;
+    color:var(--text-hi);
+    text-shadow:0 0 40px rgba(255,255,255,0.08), 0 0 90px rgba(255,106,61,0.08);
+    font-variant-numeric:tabular-nums;
+    user-select:none;
+  }
+  .timer.warn{ color:#ffb37a; }
+  .timer.critical{ color:var(--accent); }
+
+  .progress-wrap{
+    position:relative;
+    width:min(70vw,560px);
+    margin-top:40px;
+    pointer-events:none;
+  }
+  .progress-track{
+    position:relative;
+    width:100%;
+    height:5px;
+    background:rgba(255,255,255,0.12);
+    border-radius:999px;
+    overflow:visible;
+  }
+  .progress-fill{
+    position:absolute;
+    left:0;top:0;
+    height:100%;
+    width:0%;
+    background:linear-gradient(90deg,rgba(255,106,61,0.15),var(--accent));
+    border-radius:999px;
+  }
+  .rocket{
+    position:absolute;
+    top:50%;
+    left:0%;
+    width:22px;
+    height:22px;
+    transform:translate(-50%,-50%) rotate(90deg);
+    filter:drop-shadow(0 0 8px var(--icon-glow));
+    transition:left 0.3s linear;
+  }
+  .rocket svg{
+    display:block;
+    width:100%;
+    height:100%;
+  }
+  .progress-labels{
+    display:flex;
+    justify-content:space-between;
+    margin-top:10px;
+    font-size:12px;
+    letter-spacing:0.1em;
+    color:var(--text-lo);
+  }
+
+  .controls{
+    position:fixed;
+    left:50%;
+    bottom:8vh;
+    transform:translateX(-50%);
+    display:flex;
+    gap:16px;
+    z-index:5;
+  }
+  .launch-wrap{
+    position:relative;
+  }
+  .jumper-pos{
+    position:absolute;
+    left:50%;
+    bottom:100%;
+    transform:translateX(-50%);
+    margin-bottom:6px;
+    pointer-events:none;
+    transition:opacity 0.2s ease;
+  }
+  .jumper-pos.hidden{
+    opacity:0;
+  }
+  .jumper{
+    display:inline-block;
+    width:26px;
+    height:26px;
+    animation:jumpCycle 3s ease-in-out infinite;
+    filter:drop-shadow(0 0 7px var(--icon-glow)) drop-shadow(0 4px 6px rgba(0,0,0,0.4));
+  }
+  .jumper svg{
+    display:block;
+    width:100%;
+    height:100%;
+  }
+  @keyframes jumpCycle{
+    0%, 76%   { transform:translateY(0) scaleY(1); }
+    84%       { transform:translateY(-18px) scaleY(1.05); }
+    90%       { transform:translateY(0) scaleY(0.85); }
+    94%       { transform:translateY(-6px) scaleY(1); }
+    100%      { transform:translateY(0) scaleY(1); }
+  }
+
+  button{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    font-size:14px;
+    letter-spacing:0.08em;
+    padding:11px 32px;
+    border-radius:999px;
+    cursor:pointer;
+    border:1px solid var(--gray-btn-border);
+    background:var(--gray-btn);
+    color:var(--gray-btn-text);
+    transition:all 0.15s ease;
+  }
+  button:hover{
+    background:#212a3d;
+    color:var(--text-hi);
+  }
+  button:active{
+    transform:scale(0.97);
+  }
+  button.primary{
+    background:var(--btn-primary);
+    border-color:var(--btn-primary);
+    color:var(--btn-primary-text);
+    font-weight:700;
+    box-shadow:0 0 0 6px rgba(234,239,239,0.14), 0 0 28px 4px rgba(234,239,239,0.5);
+  }
+  button.primary:hover{
+    background:var(--btn-primary-hover);
+    border-color:var(--btn-primary-hover);
+  }
+  button:disabled{
+    opacity:0.35;
+    cursor:not-allowed;
+    transform:none;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="scene"></canvas>
+
+<div class="planet-switcher" id="planetSwitcher">
+  <button class="planet-btn active" data-planet="earth">地球</button>
+  <button class="planet-btn" data-planet="mars">火星</button>
+  <button class="planet-btn" data-planet="moon">月球</button>
+  <button class="planet-btn" data-planet="jupiter">木星</button>
+  <button class="planet-btn" data-planet="saturn">土星</button>
+</div>
+
+<div class="hud">
+  <div class="label" id="statusLabel">待命中</div>
+  <div class="timer" id="timer">25:00</div>
+  <div class="progress-wrap">
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill"></div>
+      <div class="rocket" id="rocket">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="rocketBodyGrad" x1="12" y1="1" x2="12" y2="19" gradientUnits="userSpaceOnUse">
+              <stop offset="0" style="stop-color:#ffffff"/>
+              <stop offset="1" style="stop-color:#a9c4ff"/>
+            </linearGradient>
+            <linearGradient id="rocketFinGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" style="stop-color:#c9d9ff"/>
+              <stop offset="1" style="stop-color:#7d9be8"/>
+            </linearGradient>
+          </defs>
+          <path d="M12 1c2.7 2.7 4.1 6.1 4.1 10.1 0 2.4-.5 4.6-1.4 6.6H9.3c-.9-2-1.4-4.2-1.4-6.6C7.9 7.1 9.3 3.7 12 1z" fill="url(#rocketBodyGrad)"/>
+          <circle cx="12" cy="9.6" r="1.7" fill="#0a0e18" opacity="0.75"/>
+          <path d="M7.9 13.6l-3.1 3.5 3.7-1.1v-2.4z" fill="url(#rocketFinGrad)"/>
+          <path d="M16.1 13.6l3.1 3.5-3.7-1.1v-2.4z" fill="url(#rocketFinGrad)"/>
+          <path d="M9.7 18.2h4.6l-1.5 3.9a0.9 0.9 0 01-1.6 0l-1.5-3.9z" fill="#ffb37a"/>
+        </svg>
+      </div>
+    </div>
+    <div class="progress-labels">
+      <span>啟程</span>
+      <span>抵達</span>
+    </div>
+  </div>
+</div>
+
+<div class="controls">
+  <div class="launch-wrap">
+    <div class="jumper-pos" id="jumperPos">
+      <span class="jumper">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="astroHeadGrad" x1="8" y1="3" x2="16" y2="11" gradientUnits="userSpaceOnUse">
+              <stop offset="0" style="stop-color:#ffffff"/>
+              <stop offset="1" style="stop-color:#a9c4ff"/>
+            </linearGradient>
+            <linearGradient id="astroBodyGrad" x1="6" y1="10" x2="18" y2="22" gradientUnits="userSpaceOnUse">
+              <stop offset="0" style="stop-color:#dfe8ff"/>
+              <stop offset="1" style="stop-color:#8fa8e0"/>
+            </linearGradient>
+          </defs>
+          <circle cx="12" cy="7" r="4.3" fill="url(#astroHeadGrad)"/>
+          <circle cx="12" cy="7" r="2.5" fill="#0a0e18" opacity="0.55"/>
+          <path d="M6.3 21.6l1.2-7.3a4.6 4.6 0 019 0l1.2 7.3" stroke="url(#astroBodyGrad)" stroke-width="2.6" stroke-linecap="round" fill="none"/>
+          <circle cx="6.4" cy="15.6" r="1.6" fill="url(#astroBodyGrad)"/>
+          <circle cx="17.6" cy="15.6" r="1.6" fill="url(#astroBodyGrad)"/>
+        </svg>
+      </span>
+    </div>
+    <button id="btnLaunch" class="primary">發射</button>
+  </div>
+  <button id="btnStandby">待機</button>
+  <button id="btnReturn">返航</button>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------------- Timer ---------------- */
+  var TOTAL_SECONDS = 25 * 60;
+  var remaining = TOTAL_SECONDS;
+  var state = "idle"; // idle | running | standby
+  var tickHandle = null;
+
+  var timerEl = document.getElementById('timer');
+  var statusEl = document.getElementById('statusLabel');
+  var fillEl = document.getElementById('progressFill');
+  var rocketEl = document.getElementById('rocket');
+  var btnLaunch = document.getElementById('btnLaunch');
+  var btnStandby = document.getElementById('btnStandby');
+  var btnReturn = document.getElementById('btnReturn');
+  var jumperPos = document.getElementById('jumperPos');
+
+  function formatTime(s){
+    var m = Math.floor(s / 60);
+    var sec = s % 60;
+    return (m < 10 ? "0" + m : m) + ":" + (sec < 10 ? "0" + sec : sec);
+  }
+
+  function render(){
+    timerEl.textContent = formatTime(remaining);
+    timerEl.classList.remove('warn','critical');
+    if(remaining <= 60){
+      timerEl.classList.add('critical');
+    } else if(remaining <= 300){
+      timerEl.classList.add('warn');
+    }
+    var progress = 1 - (remaining / TOTAL_SECONDS);
+    var pct = Math.max(0, Math.min(1, progress)) * 100;
+    fillEl.style.width = pct + "%";
+    rocketEl.style.left = pct + "%";
+  }
+
+  function tick(){
+    if(remaining > 0){
+      remaining--;
+      render();
+      if(remaining === 0){
+        stopTicking();
+        state = "idle";
+        statusEl.textContent = "任務完成";
+        updateButtons();
+      }
+    }
+  }
+
+  function startTicking(){
+    stopTicking();
+    tickHandle = setInterval(tick, 1000);
+  }
+
+  function stopTicking(){
+    if(tickHandle){
+      clearInterval(tickHandle);
+      tickHandle = null;
+    }
+  }
+
+  function updateButtons(){
+    btnLaunch.disabled = (state === "running");
+    btnStandby.disabled = (state !== "running");
+    btnReturn.disabled = (state === "idle" && remaining === TOTAL_SECONDS);
+    jumperPos.classList.toggle('hidden', btnLaunch.disabled);
+  }
+
+  btnLaunch.addEventListener('click', function(){
+    if(state === "running") return;
+    state = "running";
+    statusEl.textContent = "任務進行中";
+    startTicking();
+    updateButtons();
+  });
+
+  btnStandby.addEventListener('click', function(){
+    if(state !== "running") return;
+    state = "standby";
+    stopTicking();
+    statusEl.textContent = "待機中";
+    updateButtons();
+  });
+
+  btnReturn.addEventListener('click', function(){
+    stopTicking();
+    state = "idle";
+    remaining = TOTAL_SECONDS;
+    statusEl.textContent = "待命中";
+    render();
+    updateButtons();
+  });
+
+  render();
+  updateButtons();
+
+  /* ---------------- Planet Scene ---------------- */
+  var canvas = document.getElementById('scene');
+  var ctx = canvas.getContext('2d');
+  var DPR = Math.min(window.devicePixelRatio || 1, 2);
+
+  var W = 0, H = 0;
+
+  function resize(){
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = Math.floor(W * DPR);
+    canvas.height = Math.floor(H * DPR);
+    canvas.style.width = W + "px";
+    canvas.style.height = H + "px";
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    buildStars();
+    buildPlanetPoints();
+    buildRings();
+  }
+
+  /* ---- deterministic PRNG so stars/rings never jump on redraw/resize ---- */
+  function mulberry32(seed){
+    return function(){
+      seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+      var t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  /* Stars are generated once in normalized [0,1] space against a fixed
+     seed, then mapped to the current W/H on every resize/draw. This keeps
+     their relative layout fixed regardless of viewport size. */
+  var STAR_COUNT = 260;
+  var starsNorm = null; // {x,y,r,baseAlpha,tw} in [0,1] space, fixed forever
+
+  function buildStars(){
+    if(starsNorm) return; // build exactly once
+    var rand = mulberry32(1337);
+    starsNorm = [];
+    for(var i = 0; i < STAR_COUNT; i++){
+      starsNorm.push({
+        x: rand(),
+        y: rand(),
+        r: 0.4 + rand() * 1.3,
+        baseAlpha: 0.25 + rand() * 0.6,
+        tw: rand() * Math.PI * 2,
+        speed: 0.4 + rand() * 0.8
+      });
+    }
+  }
+
+  /* ---- Saturn's rings: a fixed diagonal dust band across the sky ---- */
+  var ringPointsNorm = null;
+  var RING_COUNT = 300;
+
+  function buildRings(){
+    if(ringPointsNorm) return; // build exactly once
+    var rand = mulberry32(24601);
+    ringPointsNorm = [];
+    for(var i = 0; i < RING_COUNT; i++){
+      ringPointsNorm.push({
+        t: rand(),               // position along the band, 0..1 (left..right)
+        thickness: rand() - 0.5, // -0.5..0.5 across the band
+        size: 0.5 + rand() * 1.6,
+        alpha: 0.25 + rand() * 0.65
+      });
+    }
+  }
+
+  function drawRings(theme){
+    if(!theme.rings || !ringPointsNorm) return;
+    var y0n = 0.24, y1n = 0.05; // normalized sky height, left -> right
+    var bandWidthN = 0.045;
+    var c = theme.dayColor;
+    for(var i = 0; i < ringPointsNorm.length; i++){
+      var p = ringPointsNorm[i];
+      var x = p.t * W;
+      var baseYn = y0n + (y1n - y0n) * p.t;
+      var arc = Math.sin(p.t * Math.PI) * 0.02;
+      var y = (baseYn - arc + p.thickness * bandWidthN) * H;
+      var edgeFade = 1 - Math.min(1, Math.abs(p.thickness) * 1.6);
+      var alpha = p.alpha * edgeFade;
+      ctx.beginPath();
+      ctx.fillStyle = 'rgba(' + c.r + ',' + c.g + ',' + c.b + ',' + alpha.toFixed(3) + ')';
+      ctx.arc(x, y, p.size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  /* ---- Planet: lat/long particle grid ---- */
+  var PLANET_RADIUS_RATIO = 1.35; // relative to width, planet center below screen
+  var planetPoints = null;
+  var planetGeom = null;
+
+  function buildPlanetPoints(){
+    var radius = W * PLANET_RADIUS_RATIO * 0.62;
+    var cx = W * 0.5;
+    var cy = H + radius * 0.62; // push planet mostly below the frame
+
+    planetGeom = { cx: cx, cy: cy, radius: radius };
+
+    var LAT_STEPS = 68;
+    var pts = [];
+    var rand = mulberry32(4242);
+
+    for(var i = 0; i <= LAT_STEPS; i++){
+      var v = i / LAT_STEPS; // 0..1 top to bottom
+      var lat = (v - 0.5) * Math.PI; // -pi/2..pi/2
+      var ringRadius = Math.cos(lat); // 0..1
+      var circumference = ringRadius * 2 * Math.PI;
+      var lonSteps = Math.max(4, Math.round(circumference * 40));
+
+      for(var j = 0; j < lonSteps; j++){
+        var lon = (j / lonSteps) * Math.PI * 2 + (rand() - 0.5) * 0.02;
+        // sphere surface point, camera looking down -z axis (z>0 toward viewer)
+        var x3 = Math.cos(lat) * Math.cos(lon);
+        var y3 = Math.sin(lat);
+        var z3 = Math.cos(lat) * Math.sin(lon);
+
+        if(z3 < -0.02) continue; // back-facing, skip (cull far side)
+
+        pts.push({
+          x3: x3, y3: y3, z3: z3,
+          jitter: rand()
+        });
+      }
+    }
+    planetPoints = pts;
+  }
+
+  // Light direction: upper-left, pointing toward the sphere (in same 3D space)
+  var LIGHT_DIR = normalize3(-0.62, -0.55, 0.55);
+
+  function normalize3(x,y,z){
+    var len = Math.sqrt(x*x + y*y + z*z);
+    return { x: x/len, y: y/len, z: z/len };
+  }
+
+  /* ---- Per-planet visual themes ---- */
+  var PLANET_THEMES = {
+    earth: {
+      bg: ['#03050a', '#070b16'],
+      glow: ['rgba(110,160,255,0.16)', 'rgba(140,180,255,0.10)'],
+      rim: 'rgba(180,210,255,0.10)',
+      base: '#05070d',
+      dayColor: { r:210, g:225, b:255 },
+      nightColor: { r:14, g:19, b:32 },
+      nightFloor: 0.05,
+      bands: null,
+      rings: false
+    },
+    mars: {
+      bg: ['#0e0502', '#1c0a04'],
+      glow: ['rgba(255,120,70,0.18)', 'rgba(255,150,90,0.10)'],
+      rim: 'rgba(255,180,120,0.12)',
+      base: '#130703',
+      dayColor: { r:255, g:130, b:80 },
+      nightColor: { r:40, g:16, b:9 },
+      nightFloor: 0.07,
+      bands: null,
+      rings: false
+    },
+    moon: {
+      bg: ['#08080a', '#101014'],
+      glow: ['rgba(200,200,215,0.05)', 'rgba(200,200,215,0.03)'],
+      rim: 'rgba(220,220,230,0.06)',
+      base: '#0b0b0d',
+      dayColor: { r:214, g:214, b:220 },
+      nightColor: { r:30, g:30, b:34 },
+      nightFloor: 0.04,
+      bands: null,
+      rings: false
+    },
+    jupiter: {
+      bg: ['#110c06', '#1b140a'],
+      glow: ['rgba(255,210,140,0.14)', 'rgba(255,220,160,0.08)'],
+      rim: 'rgba(255,230,180,0.10)',
+      base: '#100b06',
+      dayColor: { r:230, g:190, b:130 },
+      nightColor: { r:42, g:30, b:18 },
+      nightFloor: 0.06,
+      bands: [
+        { r:238, g:206, b:160 },
+        { r:196, g:145, b:96 },
+        { r:222, g:178, b:118 },
+        { r:172, g:114, b:76 },
+        { r:230, g:195, b:150 }
+      ],
+      rings: false
+    },
+    saturn: {
+      bg: ['#100c05', '#1a1409'],
+      glow: ['rgba(255,225,160,0.16)', 'rgba(255,235,180,0.10)'],
+      rim: 'rgba(255,240,200,0.12)',
+      base: '#0f0b05',
+      dayColor: { r:236, g:206, b:152 },
+      nightColor: { r:46, g:34, b:19 },
+      nightFloor: 0.07,
+      bands: null,
+      rings: true
+    }
+  };
+
+  var currentPlanet = 'earth';
+
+  function bandColorFor(theme, y3, jitter){
+    if(!theme.bands) return theme.dayColor;
+    var t = (y3 + 1) / 2; // 0..1
+    var idx = Math.min(theme.bands.length - 1, Math.floor(t * theme.bands.length));
+    var c = theme.bands[idx];
+    var noise = 0.88 + jitter * 0.24;
+    return {
+      r: Math.min(255, c.r * noise),
+      g: Math.min(255, c.g * noise),
+      b: Math.min(255, c.b * noise)
+    };
+  }
+
+  function drawPlanet(time, theme){
+    var g = planetGeom;
+    var cx = g.cx, cy = g.cy, radius = g.radius;
+
+    // Atmosphere glow ring along the visible horizon (top arc of the planet)
+    var glowGrad = ctx.createRadialGradient(cx, cy, radius * 0.965, cx, cy, radius * 1.14);
+    glowGrad.addColorStop(0, 'rgba(120,170,255,0.0)');
+    glowGrad.addColorStop(0.35, theme.glow[0]);
+    glowGrad.addColorStop(0.6, theme.glow[1]);
+    glowGrad.addColorStop(1, 'rgba(140,180,255,0)');
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius * 1.14, 0, Math.PI * 2);
+    ctx.fillStyle = glowGrad;
+    ctx.fill();
+    ctx.restore();
+
+    // extra rim glow biased toward light side (upper-left)
+    ctx.save();
+    var rimGrad = ctx.createRadialGradient(
+      cx - radius * 0.5, cy - radius * 0.5, radius * 0.2,
+      cx, cy, radius * 1.1
+    );
+    rimGrad.addColorStop(0, 'rgba(255,255,255,0)');
+    rimGrad.addColorStop(0.78, 'rgba(255,255,255,0)');
+    rimGrad.addColorStop(0.92, theme.rim);
+    rimGrad.addColorStop(1, 'rgba(180,210,255,0)');
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius * 1.14, 0, Math.PI * 2);
+    ctx.fillStyle = rimGrad;
+    ctx.fill();
+    ctx.restore();
+
+    // Dark sphere base so unlit gaps between particles read as planet, not space
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.fillStyle = theme.base;
+    ctx.fill();
+    ctx.restore();
+
+    // subtle slow rotation so the grid feels alive but never jumps in a distracting way
+    var rot = time * 0.00004;
+
+    var pts = planetPoints;
+    var night = theme.nightColor;
+    for(var i = 0; i < pts.length; i++){
+      var p = pts[i];
+
+      // rotate around Y axis slowly
+      var cosR = Math.cos(rot), sinR = Math.sin(rot);
+      var x3 = p.x3 * cosR + p.z3 * sinR;
+      var z3 = -p.x3 * sinR + p.z3 * cosR;
+      var y3 = p.y3;
+
+      if(z3 < -0.02) continue;
+
+      var sx = cx + x3 * radius;
+      var sy = cy + y3 * radius;
+
+      // only draw within/near the visible arc region (above bottom edge cropping handled by viewport)
+      if(sy < -20 || sy > H + 20) continue;
+      if(sx < -20 || sx > W + 20) continue;
+
+      // lighting: dot product of surface normal (x3,y3,z3) with light dir
+      var ndotl = x3 * LIGHT_DIR.x + y3 * LIGHT_DIR.y + z3 * LIGHT_DIR.z;
+      var lightAmt = Math.max(0, ndotl); // 0..1
+
+      // limb factor: how close to silhouette edge (z3 near 0 means edge-on)
+      var limb = 1 - Math.min(1, Math.abs(z3) / 0.55);
+      limb = Math.max(0, limb);
+      limb = Math.pow(limb, 2.2);
+
+      // base brightness from day/night terminator
+      var brightness = lightAmt * 0.85 + 0.05;
+      // dark side floor so night side particles are still faintly visible
+      brightness = Math.max(theme.nightFloor, brightness);
+
+      // rim/edge light boost, stronger on the lit side, subtle on dark side
+      var rimBoost = limb * (0.35 + lightAmt * 0.65);
+      brightness = Math.min(1, brightness + rimBoost);
+
+      var size = (1.0 + brightness * 1.6 + limb * 0.8) * 0.7;
+
+      // color: lerp night -> day (or latitude band) by brightness, then push rim toward white
+      var day = bandColorFor(theme, p.y3, p.jitter);
+      var r = night.r + (day.r - night.r) * brightness;
+      var gC = night.g + (day.g - night.g) * brightness;
+      var b = night.b + (day.b - night.b) * brightness;
+
+      r += rimBoost * (255 - r) * 0.6;
+      gC += rimBoost * (255 - gC) * 0.6;
+      b += rimBoost * (255 - b) * 0.6;
+
+      r = Math.round(Math.min(255, r)); gC = Math.round(Math.min(255, gC)); b = Math.round(Math.min(255, b));
+
+      var alpha = 0.15 + brightness * 0.85;
+
+      ctx.beginPath();
+      ctx.fillStyle = 'rgba(' + r + ',' + gC + ',' + b + ',' + alpha.toFixed(3) + ')';
+      ctx.arc(sx, sy, size * 0.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // extra glow speck for strong rim-lit points
+      if(rimBoost > 0.5){
+        ctx.beginPath();
+        ctx.fillStyle = 'rgba(255,255,255,' + (rimBoost - 0.5).toFixed(3) + ')';
+        ctx.arc(sx, sy, size * 0.35, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+
+  function drawStars(time){
+    for(var i = 0; i < starsNorm.length; i++){
+      var s = starsNorm[i];
+      var sx = s.x * W;
+      var sy = s.y * H;
+
+      // skip stars that would be hidden behind/inside the planet body
+      var g = planetGeom;
+      var dx = sx - g.cx, dy = sy - g.cy;
+      if(Math.sqrt(dx*dx + dy*dy) < g.radius * 0.995) continue;
+
+      var twinkle = 0.75 + 0.25 * Math.sin(time * 0.001 * s.speed + s.tw);
+      var alpha = s.baseAlpha * twinkle;
+
+      ctx.beginPath();
+      ctx.fillStyle = 'rgba(255,255,255,' + alpha.toFixed(3) + ')';
+      ctx.arc(sx, sy, s.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function drawBackground(theme){
+    var grad = ctx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, theme.bg[0]);
+    grad.addColorStop(1, theme.bg[1]);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  function frame(time){
+    var theme = PLANET_THEMES[currentPlanet];
+    ctx.clearRect(0, 0, W, H);
+    drawBackground(theme);
+    drawStars(time);
+    drawRings(theme);
+    drawPlanet(time, theme);
+    requestAnimationFrame(frame);
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+  requestAnimationFrame(frame);
+
+  /* ---------------- Planet switcher ---------------- */
+  var switcher = document.getElementById('planetSwitcher');
+  switcher.addEventListener('click', function(e){
+    var btn = e.target.closest('.planet-btn');
+    if(!btn) return;
+    var planet = btn.getAttribute('data-planet');
+    if(!PLANET_THEMES[planet] || planet === currentPlanet) return;
+    currentPlanet = planet;
+    var buttons = switcher.querySelectorAll('.planet-btn');
+    for(var i = 0; i < buttons.length; i++){
+      buttons[i].classList.toggle('active', buttons[i] === btn);
+    }
+  });
+
+})();
+</script>
+
+</body>
+</html>
