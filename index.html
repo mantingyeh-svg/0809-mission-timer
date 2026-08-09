@@ -299,20 +299,24 @@
       <span class="jumper">
         <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <defs>
-            <linearGradient id="astroHeadGrad" x1="8" y1="3" x2="16" y2="11" gradientUnits="userSpaceOnUse">
+            <linearGradient id="astroHeadGrad" x1="8" y1="2" x2="16" y2="8" gradientUnits="userSpaceOnUse">
               <stop offset="0" style="stop-color:#fffaf0"/>
               <stop offset="1" style="stop-color:#f0d98c"/>
             </linearGradient>
-            <linearGradient id="astroBodyGrad" x1="6" y1="10" x2="18" y2="22" gradientUnits="userSpaceOnUse">
+            <linearGradient id="astroBodyGrad" x1="2" y1="6" x2="21" y2="22" gradientUnits="userSpaceOnUse">
               <stop offset="0" style="stop-color:#f8ecc8"/>
               <stop offset="1" style="stop-color:#d9b45c"/>
             </linearGradient>
           </defs>
-          <circle cx="12" cy="7" r="4.3" fill="url(#astroHeadGrad)"/>
-          <circle cx="12" cy="7" r="2.5" fill="#0a0e18" opacity="0.55"/>
-          <path d="M6.3 21.6l1.2-7.3a4.6 4.6 0 019 0l1.2 7.3" stroke="url(#astroBodyGrad)" stroke-width="2.6" stroke-linecap="round" fill="none"/>
-          <circle cx="6.4" cy="15.6" r="1.6" fill="url(#astroBodyGrad)"/>
-          <circle cx="17.6" cy="15.6" r="1.6" fill="url(#astroBodyGrad)"/>
+          <!-- one leg lifted, arms spread wide as if about to launch into flight -->
+          <circle cx="12" cy="4.8" r="2.9" fill="url(#astroHeadGrad)"/>
+          <circle cx="12" cy="4.8" r="1.6" fill="#16204a" opacity="0.55"/>
+          <path d="M11.1 8.3C8.3 7.2 5.2 6.2 2.8 5.6" stroke="url(#astroBodyGrad)" stroke-width="1.9" stroke-linecap="round" fill="none"/>
+          <path d="M12.9 8.3C15.7 7.0 18.8 6.6 21.3 7.9" stroke="url(#astroBodyGrad)" stroke-width="1.9" stroke-linecap="round" fill="none"/>
+          <path d="M12 7.6C11.8 9.2 11.6 10.6 11.5 12.1 11.1 15.3 10.6 18.6 10.1 21.7" stroke="url(#astroBodyGrad)" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+          <path d="M11.9 12.4C14 12.9 15.8 13.2 16.6 15.3 17 16.4 16.6 17.7 15.5 18.3" stroke="url(#astroBodyGrad)" stroke-width="2.1" stroke-linecap="round" fill="none"/>
+          <circle cx="2.8" cy="5.6" r="1.15" fill="url(#astroBodyGrad)"/>
+          <circle cx="21.3" cy="7.9" r="1.15" fill="url(#astroBodyGrad)"/>
         </svg>
       </span>
     </div>
@@ -471,7 +475,8 @@
     canvas.style.height = H + "px";
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     buildStars();
-    buildPlanetPoints();
+    buildPlanetGeom();
+    buildPlanetBlotches();
     buildRings();
   }
 
@@ -545,53 +550,38 @@
     }
   }
 
-  /* ---- Planet: lat/long particle grid ---- */
+  /* ---- Planet: painted disc with gradient shading + weathered texture ---- */
   var PLANET_RADIUS_RATIO = 1.35; // relative to width, planet center below screen
-  var planetPoints = null;
   var planetGeom = null;
+  var planetBlotches = null;
+  var BLOTCH_COUNT = 46;
 
-  function buildPlanetPoints(){
+  // Light bias (upper-left), expressed as a fraction of the planet radius
+  var LIGHT_OFFSET = { x: -0.42, y: -0.55 };
+
+  function buildPlanetGeom(){
     var radius = W * PLANET_RADIUS_RATIO * 0.62;
     var cx = W * 0.5;
     var cy = H + radius * 0.62; // push planet mostly below the frame
-
     planetGeom = { cx: cx, cy: cy, radius: radius };
-
-    var LAT_STEPS = 68;
-    var pts = [];
-    var rand = mulberry32(4242);
-
-    for(var i = 0; i <= LAT_STEPS; i++){
-      var v = i / LAT_STEPS; // 0..1 top to bottom
-      var lat = (v - 0.5) * Math.PI; // -pi/2..pi/2
-      var ringRadius = Math.cos(lat); // 0..1
-      var circumference = ringRadius * 2 * Math.PI;
-      var lonSteps = Math.max(4, Math.round(circumference * 40));
-
-      for(var j = 0; j < lonSteps; j++){
-        var lon = (j / lonSteps) * Math.PI * 2 + (rand() - 0.5) * 0.02;
-        // sphere surface point, camera looking down -z axis (z>0 toward viewer)
-        var x3 = Math.cos(lat) * Math.cos(lon);
-        var y3 = Math.sin(lat);
-        var z3 = Math.cos(lat) * Math.sin(lon);
-
-        if(z3 < -0.02) continue; // back-facing, skip (cull far side)
-
-        pts.push({
-          x3: x3, y3: y3, z3: z3,
-          jitter: rand()
-        });
-      }
-    }
-    planetPoints = pts;
   }
 
-  // Light direction: upper-left, pointing toward the sphere (in same 3D space)
-  var LIGHT_DIR = normalize3(-0.62, -0.55, 0.55);
-
-  function normalize3(x,y,z){
-    var len = Math.sqrt(x*x + y*y + z*z);
-    return { x: x/len, y: y/len, z: z/len };
+  function buildPlanetBlotches(){
+    if(planetBlotches) return; // build exactly once, weathering stays fixed
+    var rand = mulberry32(4242);
+    planetBlotches = [];
+    for(var i = 0; i < BLOTCH_COUNT; i++){
+      var ang = rand() * Math.PI * 2;
+      var rr = Math.sqrt(rand()) * 0.92; // even area distribution within the disc
+      planetBlotches.push({
+        lx: Math.cos(ang) * rr,
+        ly: Math.sin(ang) * rr,
+        r: 0.10 + rand() * 0.22,
+        tone: (rand() - 0.5) * 2, // -1 (darker patch) .. 1 (lighter patch)
+        alpha: 0.10 + rand() * 0.16,
+        jitter: rand()
+      });
+    }
   }
 
   /* ---- Per-planet visual themes ---- */
@@ -603,7 +593,6 @@
       base: '#05070d',
       dayColor: { r:210, g:225, b:255 },
       nightColor: { r:14, g:19, b:32 },
-      nightFloor: 0.05,
       bands: null,
       rings: false
     },
@@ -614,7 +603,6 @@
       base: '#130703',
       dayColor: { r:255, g:130, b:80 },
       nightColor: { r:40, g:16, b:9 },
-      nightFloor: 0.07,
       bands: null,
       rings: false
     },
@@ -625,7 +613,6 @@
       base: '#241c10',
       dayColor: { r:248, g:236, b:194 },
       nightColor: { r:34, g:28, b:18 },
-      nightFloor: 0.05,
       bands: null,
       rings: false
     },
@@ -636,7 +623,6 @@
       base: '#100b06',
       dayColor: { r:230, g:190, b:130 },
       nightColor: { r:42, g:30, b:18 },
-      nightFloor: 0.06,
       bands: [
         { r:238, g:206, b:160 },
         { r:196, g:145, b:96 },
@@ -653,7 +639,6 @@
       base: '#0f0b05',
       dayColor: { r:236, g:206, b:152 },
       nightColor: { r:46, g:34, b:19 },
-      nightFloor: 0.07,
       bands: null,
       rings: true
     }
@@ -661,10 +646,22 @@
 
   var currentPlanet = 'moon';
 
-  function bandColorFor(theme, y3, jitter){
+  function mixColor(a, b, t){
+    return {
+      r: a.r + (b.r - a.r) * t,
+      g: a.g + (b.g - a.g) * t,
+      b: a.b + (b.b - a.b) * t
+    };
+  }
+
+  function rgbaStr(c, a){
+    return 'rgba(' + Math.round(c.r) + ',' + Math.round(c.g) + ',' + Math.round(c.b) + ',' + a.toFixed(3) + ')';
+  }
+
+  function bandColorFor(theme, ly, jitter){
     if(!theme.bands) return theme.dayColor;
-    var t = (y3 + 1) / 2; // 0..1
-    var idx = Math.min(theme.bands.length - 1, Math.floor(t * theme.bands.length));
+    var t = (ly + 1) / 2; // 0..1
+    var idx = Math.min(theme.bands.length - 1, Math.max(0, Math.floor(t * theme.bands.length)));
     var c = theme.bands[idx];
     var noise = 0.88 + jitter * 0.24;
     return {
@@ -707,84 +704,64 @@
     ctx.fill();
     ctx.restore();
 
-    // Dark sphere base so unlit gaps between particles read as planet, not space
     ctx.save();
     ctx.beginPath();
     ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-    ctx.fillStyle = theme.base;
-    ctx.fill();
+    ctx.closePath();
+    ctx.clip();
+
+    // directional gradient shading: bright near the light point, fading to shadow at the far edge
+    var lightX = cx + LIGHT_OFFSET.x * radius;
+    var lightY = cy + LIGHT_OFFSET.y * radius;
+    var highlight = mixColor(theme.dayColor, { r:255, g:255, b:255 }, 0.35);
+    var midTone = mixColor(theme.dayColor, theme.nightColor, 0.55);
+    var shadeGrad = ctx.createRadialGradient(lightX, lightY, radius * 0.05, lightX, lightY, radius * 1.7);
+    shadeGrad.addColorStop(0, rgbaStr(highlight, 1));
+    shadeGrad.addColorStop(0.32, rgbaStr(theme.dayColor, 1));
+    shadeGrad.addColorStop(0.68, rgbaStr(midTone, 1));
+    shadeGrad.addColorStop(1, rgbaStr(theme.nightColor, 1));
+    ctx.fillStyle = shadeGrad;
+    ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
+
+    // weathered blotches: soft, fixed patches for an aged/brushed surface
+    for(var i = 0; i < planetBlotches.length; i++){
+      var bl = planetBlotches[i];
+      var bx = cx + bl.lx * radius;
+      var by = cy + bl.ly * radius;
+      var br = bl.r * radius;
+      var base = bandColorFor(theme, bl.ly, bl.jitter);
+      var tintTarget = bl.tone > 0 ? { r:255, g:255, b:255 } : theme.nightColor;
+      var blotchColor = mixColor(base, tintTarget, Math.abs(bl.tone) * 0.5);
+      var blobGrad = ctx.createRadialGradient(bx, by, 0, bx, by, br);
+      blobGrad.addColorStop(0, rgbaStr(blotchColor, bl.alpha));
+      blobGrad.addColorStop(1, rgbaStr(blotchColor, 0));
+      ctx.beginPath();
+      ctx.fillStyle = blobGrad;
+      ctx.arc(bx, by, br, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // fine grain for a brushed/aged canvas feel
+    if(grainPattern){
+      ctx.save();
+      ctx.globalAlpha = 0.16;
+      ctx.globalCompositeOperation = 'overlay';
+      ctx.fillStyle = grainPattern;
+      ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
+      ctx.restore();
+    }
+
+    // gentle limb darkening so the disc reads as a round, lit sphere
+    var limbGrad = ctx.createRadialGradient(cx, cy, radius * 0.55, cx, cy, radius);
+    limbGrad.addColorStop(0, 'rgba(0,0,0,0)');
+    limbGrad.addColorStop(1, 'rgba(0,0,0,0.35)');
+    ctx.save();
+    ctx.globalCompositeOperation = 'multiply';
+    ctx.fillStyle = limbGrad;
+    ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
     ctx.restore();
 
-    // subtle slow rotation so the grid feels alive but never jumps in a distracting way
-    var rot = time * 0.00004;
-
-    var pts = planetPoints;
-    var night = theme.nightColor;
-    for(var i = 0; i < pts.length; i++){
-      var p = pts[i];
-
-      // rotate around Y axis slowly
-      var cosR = Math.cos(rot), sinR = Math.sin(rot);
-      var x3 = p.x3 * cosR + p.z3 * sinR;
-      var z3 = -p.x3 * sinR + p.z3 * cosR;
-      var y3 = p.y3;
-
-      if(z3 < -0.02) continue;
-
-      var sx = cx + x3 * radius;
-      var sy = cy + y3 * radius;
-
-      // only draw within/near the visible arc region (above bottom edge cropping handled by viewport)
-      if(sy < -20 || sy > H + 20) continue;
-      if(sx < -20 || sx > W + 20) continue;
-
-      // lighting: dot product of surface normal (x3,y3,z3) with light dir
-      var ndotl = x3 * LIGHT_DIR.x + y3 * LIGHT_DIR.y + z3 * LIGHT_DIR.z;
-      var lightAmt = Math.max(0, ndotl); // 0..1
-
-      // limb factor: how close to silhouette edge (z3 near 0 means edge-on)
-      var limb = 1 - Math.min(1, Math.abs(z3) / 0.55);
-      limb = Math.max(0, limb);
-      limb = Math.pow(limb, 2.2);
-
-      // base brightness from day/night terminator
-      var brightness = lightAmt * 0.85 + 0.05;
-      // dark side floor so night side particles are still faintly visible
-      brightness = Math.max(theme.nightFloor, brightness);
-
-      // rim/edge light boost, stronger on the lit side, subtle on dark side
-      var rimBoost = limb * (0.35 + lightAmt * 0.65);
-      brightness = Math.min(1, brightness + rimBoost);
-
-      var size = (1.0 + brightness * 1.6 + limb * 0.8) * 0.7;
-
-      // color: lerp night -> day (or latitude band) by brightness, then push rim toward white
-      var day = bandColorFor(theme, p.y3, p.jitter);
-      var r = night.r + (day.r - night.r) * brightness;
-      var gC = night.g + (day.g - night.g) * brightness;
-      var b = night.b + (day.b - night.b) * brightness;
-
-      r += rimBoost * (255 - r) * 0.6;
-      gC += rimBoost * (255 - gC) * 0.6;
-      b += rimBoost * (255 - b) * 0.6;
-
-      r = Math.round(Math.min(255, r)); gC = Math.round(Math.min(255, gC)); b = Math.round(Math.min(255, b));
-
-      var alpha = 0.15 + brightness * 0.85;
-
-      ctx.beginPath();
-      ctx.fillStyle = 'rgba(' + r + ',' + gC + ',' + b + ',' + alpha.toFixed(3) + ')';
-      ctx.arc(sx, sy, size * 0.5, 0, Math.PI * 2);
-      ctx.fill();
-
-      // extra glow speck for strong rim-lit points
-      if(rimBoost > 0.5){
-        ctx.beginPath();
-        ctx.fillStyle = 'rgba(255,255,255,' + (rimBoost - 0.5).toFixed(3) + ')';
-        ctx.arc(sx, sy, size * 0.35, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
+    ctx.restore(); // undo clip
   }
 
   function drawStars(time){
