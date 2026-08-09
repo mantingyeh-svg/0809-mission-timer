@@ -13,7 +13,7 @@
     --btn-primary:#F4E9C9;
     --btn-primary-hover:#FFF7E2;
     --btn-primary-text:#16204a;
-    --icon-glow:rgba(255,230,175,0.9);
+    --icon-glow:rgba(255,110,70,0.95);
     --text-hi:#eef2f8;
     --text-lo:#8b96c0;
     --gray-btn:#1a2350;
@@ -179,23 +179,22 @@
     position:relative;
   }
   .jumper-pos{
-    position:absolute;
-    left:50%;
-    bottom:100%;
-    transform:translateX(-50%);
-    margin-bottom:6px;
+    position:fixed;
+    left:0;
+    top:0;
+    transform:translate(-50%,-100%);
     pointer-events:none;
-    transition:opacity 0.2s ease;
-  }
-  .jumper-pos.hidden{
-    opacity:0;
+    transition:left 1.3s cubic-bezier(.4,0,.2,1), top 1.3s cubic-bezier(.4,0,.2,1);
+    z-index:20;
   }
   .jumper{
     display:inline-block;
     width:26px;
     height:26px;
-    animation:jumpCycle 3s ease-in-out infinite;
     filter:drop-shadow(0 0 7px var(--icon-glow)) drop-shadow(0 4px 6px rgba(0,0,0,0.4));
+  }
+  .jumper-pos.jumping .jumper{
+    animation:jumpCycle 3s ease-in-out infinite;
   }
   .jumper svg{
     display:block;
@@ -270,12 +269,12 @@
         <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <linearGradient id="rocketBodyGrad" x1="12" y1="1" x2="12" y2="19" gradientUnits="userSpaceOnUse">
-              <stop offset="0" style="stop-color:#fffaf0"/>
-              <stop offset="1" style="stop-color:#f0d98c"/>
+              <stop offset="0" style="stop-color:#fff2ea"/>
+              <stop offset="1" style="stop-color:#ff7a48"/>
             </linearGradient>
             <linearGradient id="rocketFinGrad" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" style="stop-color:#f5e3a8"/>
-              <stop offset="1" style="stop-color:#d9b45c"/>
+              <stop offset="0" style="stop-color:#ffb18a"/>
+              <stop offset="1" style="stop-color:#e8481f"/>
             </linearGradient>
           </defs>
           <path d="M12 1c2.7 2.7 4.1 6.1 4.1 10.1 0 2.4-.5 4.6-1.4 6.6H9.3c-.9-2-1.4-4.2-1.4-6.6C7.9 7.1 9.3 3.7 12 1z" fill="url(#rocketBodyGrad)"/>
@@ -293,33 +292,34 @@
   </div>
 </div>
 
+<div class="jumper-pos" id="jumperPos">
+  <span class="jumper">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="astroHeadGrad" x1="8" y1="2" x2="16" y2="8" gradientUnits="userSpaceOnUse">
+          <stop offset="0" style="stop-color:#fff2ea"/>
+          <stop offset="1" style="stop-color:#ff7a48"/>
+        </linearGradient>
+        <linearGradient id="astroBodyGrad" x1="2" y1="6" x2="21" y2="22" gradientUnits="userSpaceOnUse">
+          <stop offset="0" style="stop-color:#ffb18a"/>
+          <stop offset="1" style="stop-color:#e8481f"/>
+        </linearGradient>
+      </defs>
+      <!-- one leg lifted, arms spread wide as if about to launch into flight -->
+      <circle cx="12" cy="4.8" r="2.9" fill="url(#astroHeadGrad)"/>
+      <circle cx="12" cy="4.8" r="1.6" fill="#16204a" opacity="0.55"/>
+      <path d="M11.1 8.3C8.3 7.2 5.2 6.2 2.8 5.6" stroke="url(#astroBodyGrad)" stroke-width="1.9" stroke-linecap="round" fill="none"/>
+      <path d="M12.9 8.3C15.7 7.0 18.8 6.6 21.3 7.9" stroke="url(#astroBodyGrad)" stroke-width="1.9" stroke-linecap="round" fill="none"/>
+      <path d="M12 7.6C11.8 9.2 11.6 10.6 11.5 12.1 11.1 15.3 10.6 18.6 10.1 21.7" stroke="url(#astroBodyGrad)" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+      <path d="M11.9 12.4C14 12.9 15.8 13.2 16.6 15.3 17 16.4 16.6 17.7 15.5 18.3" stroke="url(#astroBodyGrad)" stroke-width="2.1" stroke-linecap="round" fill="none"/>
+      <circle cx="2.8" cy="5.6" r="1.15" fill="url(#astroBodyGrad)"/>
+      <circle cx="21.3" cy="7.9" r="1.15" fill="url(#astroBodyGrad)"/>
+    </svg>
+  </span>
+</div>
+
 <div class="controls">
   <div class="launch-wrap">
-    <div class="jumper-pos" id="jumperPos">
-      <span class="jumper">
-        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <linearGradient id="astroHeadGrad" x1="8" y1="2" x2="16" y2="8" gradientUnits="userSpaceOnUse">
-              <stop offset="0" style="stop-color:#fffaf0"/>
-              <stop offset="1" style="stop-color:#f0d98c"/>
-            </linearGradient>
-            <linearGradient id="astroBodyGrad" x1="2" y1="6" x2="21" y2="22" gradientUnits="userSpaceOnUse">
-              <stop offset="0" style="stop-color:#f8ecc8"/>
-              <stop offset="1" style="stop-color:#d9b45c"/>
-            </linearGradient>
-          </defs>
-          <!-- one leg lifted, arms spread wide as if about to launch into flight -->
-          <circle cx="12" cy="4.8" r="2.9" fill="url(#astroHeadGrad)"/>
-          <circle cx="12" cy="4.8" r="1.6" fill="#16204a" opacity="0.55"/>
-          <path d="M11.1 8.3C8.3 7.2 5.2 6.2 2.8 5.6" stroke="url(#astroBodyGrad)" stroke-width="1.9" stroke-linecap="round" fill="none"/>
-          <path d="M12.9 8.3C15.7 7.0 18.8 6.6 21.3 7.9" stroke="url(#astroBodyGrad)" stroke-width="1.9" stroke-linecap="round" fill="none"/>
-          <path d="M12 7.6C11.8 9.2 11.6 10.6 11.5 12.1 11.1 15.3 10.6 18.6 10.1 21.7" stroke="url(#astroBodyGrad)" stroke-width="2.4" stroke-linecap="round" fill="none"/>
-          <path d="M11.9 12.4C14 12.9 15.8 13.2 16.6 15.3 17 16.4 16.6 17.7 15.5 18.3" stroke="url(#astroBodyGrad)" stroke-width="2.1" stroke-linecap="round" fill="none"/>
-          <circle cx="2.8" cy="5.6" r="1.15" fill="url(#astroBodyGrad)"/>
-          <circle cx="21.3" cy="7.9" r="1.15" fill="url(#astroBodyGrad)"/>
-        </svg>
-      </span>
-    </div>
     <button id="btnLaunch" class="primary">發射</button>
   </div>
   <button id="btnStandby">待機</button>
@@ -344,6 +344,38 @@
   var btnStandby = document.getElementById('btnStandby');
   var btnReturn = document.getElementById('btnReturn');
   var jumperPos = document.getElementById('jumperPos');
+  var arrivalLabel = document.querySelectorAll('.progress-labels span')[1];
+  var criticalPhase = false;
+  var criticalStartTime = 0; // rAF time when criticalPhase last turned on, so the planet bounce can match phase
+  var lastFrameTime = 0;
+
+  function positionJumper(targetEl){
+    var r = targetEl.getBoundingClientRect();
+    jumperPos.style.left = (r.left + r.width / 2) + 'px';
+    jumperPos.style.top = (r.top - 14) + 'px';
+  }
+
+  function syncMissionVisuals(){
+    if(state === 'idle'){
+      jumperPos.classList.remove('at-arrival');
+      positionJumper(btnLaunch);
+      jumperPos.classList.add('jumping');
+      criticalPhase = false;
+    } else {
+      jumperPos.classList.add('at-arrival');
+      positionJumper(arrivalLabel);
+      var nowCritical = remaining <= 300;
+      if(nowCritical && !criticalPhase){
+        criticalStartTime = lastFrameTime;
+      }
+      criticalPhase = nowCritical;
+      jumperPos.classList.toggle('jumping', criticalPhase);
+    }
+  }
+
+  window.addEventListener('resize', function(){
+    positionJumper(jumperPos.classList.contains('at-arrival') ? arrivalLabel : btnLaunch);
+  });
 
   function formatTime(s){
     var m = Math.floor(s / 60);
@@ -375,6 +407,7 @@
         statusEl.textContent = "任務完成";
         updateButtons();
       }
+      syncMissionVisuals();
     }
   }
 
@@ -394,7 +427,6 @@
     btnLaunch.disabled = (state === "running");
     btnStandby.disabled = (state !== "running");
     btnReturn.disabled = (state === "idle" && remaining === TOTAL_SECONDS);
-    jumperPos.classList.toggle('hidden', btnLaunch.disabled);
   }
 
   btnLaunch.addEventListener('click', function(){
@@ -403,6 +435,7 @@
     statusEl.textContent = "任務進行中";
     startTicking();
     updateButtons();
+    syncMissionVisuals();
   });
 
   btnStandby.addEventListener('click', function(){
@@ -411,6 +444,7 @@
     stopTicking();
     statusEl.textContent = "待機中";
     updateButtons();
+    syncMissionVisuals();
   });
 
   btnReturn.addEventListener('click', function(){
@@ -420,10 +454,12 @@
     statusEl.textContent = "待命中";
     render();
     updateButtons();
+    syncMissionVisuals();
   });
 
   render();
   updateButtons();
+  syncMissionVisuals();
 
   /* ---------------- Sunrise / sunset (Taipei) ---------------- */
   var sunTimesEl = document.getElementById('sunTimes');
@@ -478,6 +514,7 @@
     buildPlanetGeom();
     buildPlanetBlotches();
     buildRings();
+    buildRadialParticles();
   }
 
   /* ---- deterministic PRNG so stars/rings never jump on redraw/resize ---- */
@@ -671,9 +708,39 @@
     };
   }
 
+  // Mirrors the astronaut's CSS jumpCycle keyframes so the planet bounces
+  // at the same frequency (and roughly the same phase) once critical.
+  var BOUNCE_KEYFRAMES = [
+    { p:0.00, y:0 },
+    { p:0.76, y:0 },
+    { p:0.84, y:-18 },
+    { p:0.90, y:0 },
+    { p:0.94, y:-6 },
+    { p:1.00, y:0 }
+  ];
+
+  function jumpBounceY(time, radius){
+    if(!criticalPhase) return 0;
+    var cycle = 3000;
+    var phase = (((time - criticalStartTime) % cycle) + cycle) % cycle / cycle;
+    for(var i = 0; i < BOUNCE_KEYFRAMES.length - 1; i++){
+      var a = BOUNCE_KEYFRAMES[i], b = BOUNCE_KEYFRAMES[i + 1];
+      if(phase >= a.p && phase <= b.p){
+        var span = (b.p - a.p) || 1;
+        var localT = (phase - a.p) / span;
+        var y = a.y + (b.y - a.y) * localT;
+        return (y / 18) * (radius * 0.05);
+      }
+    }
+    return 0;
+  }
+
   function drawPlanet(time, theme){
     var g = planetGeom;
     var cx = g.cx, cy = g.cy, radius = g.radius;
+
+    ctx.save();
+    ctx.translate(0, jumpBounceY(time, radius));
 
     // Atmosphere glow ring along the visible horizon (top arc of the planet)
     var glowGrad = ctx.createRadialGradient(cx, cy, radius * 0.965, cx, cy, radius * 1.14);
@@ -762,6 +829,48 @@
     ctx.restore();
 
     ctx.restore(); // undo clip
+    ctx.restore(); // undo bounce translate
+  }
+
+  /* ---- Radiating particles: stream outward from the planet's center ---- */
+  var RADIAL_PARTICLE_COUNT = 90;
+  var radialParticles = null;
+
+  function buildRadialParticles(){
+    if(radialParticles) return; // build exactly once
+    var rand = mulberry32(31415);
+    radialParticles = [];
+    for(var i = 0; i < RADIAL_PARTICLE_COUNT; i++){
+      radialParticles.push({
+        angle: rand() * Math.PI * 2,
+        phase: rand(),
+        cycleMs: 3400 + rand() * 2200,
+        size: 0.7 + rand() * 1.6,
+        alphaBase: 0.25 + rand() * 0.45
+      });
+    }
+  }
+
+  function drawRadialParticles(time, theme){
+    var g = planetGeom;
+    var cx = g.cx, cy = g.cy, radius = g.radius;
+    var speedMult = criticalPhase ? 2 : 1;
+    var tint = mixColor(theme.dayColor, { r:255, g:255, b:255 }, 0.5);
+
+    for(var i = 0; i < radialParticles.length; i++){
+      var p = radialParticles[i];
+      var t = (((time * speedMult) / p.cycleMs) + p.phase) % 1;
+      var dist = t * radius * 1.35;
+      var x = cx + Math.cos(p.angle) * dist;
+      var y = cy + Math.sin(p.angle) * dist;
+      if(x < -20 || x > W + 20 || y < -20 || y > H + 20) continue;
+      var alpha = p.alphaBase * Math.sin(t * Math.PI);
+      if(alpha <= 0.01) continue;
+      ctx.beginPath();
+      ctx.fillStyle = rgbaStr(tint, alpha);
+      ctx.arc(x, y, p.size, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 
   function drawStars(time){
@@ -823,6 +932,7 @@
   }
 
   function frame(time){
+    lastFrameTime = time;
     var theme = PLANET_THEMES[currentPlanet];
     ctx.clearRect(0, 0, W, H);
     drawBackground(theme);
@@ -830,6 +940,7 @@
     drawStars(time);
     drawRings(theme);
     drawPlanet(time, theme);
+    drawRadialParticles(time, theme);
     requestAnimationFrame(frame);
   }
 
